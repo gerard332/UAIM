@@ -1008,6 +1008,8 @@ function planBlock(A, ins) {
   const moves = A.moves || [];
   if (!moves.length) return null;
   const links = (ins && ins.moves) || [];
+  const inp = (S.R && S.R.inputs) || {}, cur = inp.cur || "GBP";
+  const runsPerMonth = parseFloat(inp.runs) || 0, ratePerHour = parseFloat(inp.rate) || 0;
   const cov = ins && ins.coverage;
   const allFm = allFms(A), linked = new Set(links.flatMap(l => l.risks.map(r => r.id)));
   const unc = allFm.filter(x => x.f.ap === "H" && !linked.has(x.f.id)).map(x => x.f.mode);
@@ -1019,8 +1021,14 @@ function planBlock(A, ins) {
       const l = links[i] || { risks: [], waits: [] };
       const waitTxt = l.waitNow != null && l.waitSaved != null ? RL("waitSaved", { saved: fmtMinutes(l.waitSaved), now: fmtMinutes(l.waitNow), p: Math.round(l.waitReductionPct) })
         : (l.waits || []).length ? l.waits.map(w => RL("waitAt", { n: w.no, t: w.waitMinutes == null ? "?" : fmtMinutes(w.waitMinutes) })).join(", ") : "";
+      const calcSaving = l.waitSaved > 0 && runsPerMonth > 0 && ratePerHour > 0 ? l.waitSaved / 60 * ratePerHour * runsPerMonth * 12 : null;
+      const estSaving = calcSaving == null && x.savingPerYear > 0 ? x.savingPerYear : null;
       return h("li", { class: "move" }, h("h3", null, x.title), h("p", null, x.detail),
         x.benefit ? h("p", { class: "benefit" }, x.benefit) : null,
+        calcSaving != null ? h("div", { class: "links" }, h("span", { class: "lk" }, _t("Saving:")), h("span", { class: "lchip w" }, _t("Up to {0} per year", [money(calcSaving, cur)])), " ",
+          h("span", { class: "src calc", title: _t("Calculated from the waiting time the move removes, how often the process runs and the loaded cost per staff hour.") }, RL("srcCalc"))) : null,
+        estSaving != null ? h("div", { class: "links" }, h("span", { class: "lk" }, _t("Saving:")), h("span", { class: "lchip w" }, _t("About {0} per year", [money(estSaving, cur)])), " ",
+          h("span", { class: "src ai", title: _t("Estimated from the process description; check it with the team.") }, RL("srcAI"))) : null,
         l.risks.length ? h("div", { class: "links" }, h("span", { class: "lk" }, RL("linksRisk") + ":"), l.risks.map(riskChip)) : null,
         waitTxt ? h("div", { class: "links" }, h("span", { class: "lk" }, RL("linksWait") + ":"), h("span", { class: "lchip w" }, waitTxt), " ",
           l.waitSaved != null ? h("span", { class: "src calc", title: _t("Calculated from your process efficiency timings and the estimated reduction") }, RL("srcCalc")) : null) : null,

@@ -409,7 +409,8 @@ def sanitize_content(new, stored):
                           "owner": _txt(m.get("owner"), 120), "timeframe": _txt(m.get("timeframe"), 40),
                           "impact": m.get("impact") if m.get("impact") in ("high", "medium", "low") else "medium",
                           "effort": m.get("effort") if m.get("effort") in ("high", "medium", "low") else "medium",
-                          "fixes": m.get("fixes") if isinstance(m.get("fixes"), dict) else {}})
+                          "fixes": m.get("fixes") if isinstance(m.get("fixes"), dict) else {},
+                          "savingPerYear": _num(m.get("savingPerYear"))})
     out["moves"] = moves
     out["executive"] = new.get("executive") if isinstance(new.get("executive"), dict) else stored.get("executive")
     out["issueCheck"] = new.get("issueCheck") if isinstance(new.get("issueCheck"), list) else stored.get("issueCheck")
