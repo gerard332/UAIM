@@ -1420,6 +1420,13 @@ function helpTip(key) {
   return h("span", { class: "helptip" }, h("button", { type: "button", class: "qmark", "aria-label": _t("What is {0}?", [_t(label).toLowerCase()]), "aria-describedby": id,
     onclick: e => { e.currentTarget.parentNode.classList.toggle("open"); } }, "?"), h("span", { class: "tipbox", role: "tooltip", id }, _t(text)));
 }
+function teamSet(f, k, val, unit) {
+  const prev = f[k];
+  const nf = { ...(prev || (unit != null ? { u: unit } : {})), v: val, conf: false, src: "user" };
+  if (unit != null) nf.u = unit;
+  if (prev && prev.src && prev.src !== "user" && !prev.orig) nf.orig = { src: prev.src, v: prev.v, u: prev.u, quote: prev.quote };
+  f[k] = nf;
+}
 function flowEdit(A) {
   const wrap = h("div", null,
     h("p", { class: "muted" }, _t("Enter the timings your team knows or has measured, for one typical item going through the process (for example one request or one order). Leave a box empty if it isn't known: empty is better than a guess. When the team has checked a step's figures, tick \u201cThe team has checked this step\u2019s figures\u201d.")),
@@ -1431,7 +1438,7 @@ function flowEdit(A) {
     const timeField = k => {
       const cur = f[k] || {};
       const num = h("input", { class: "ed", type: "number", min: "0", step: "any", inputmode: "decimal", "aria-label": _t("{0} for {1}", [_t(FLOW_HELP[k][0]), st.name]), value: cur.v == null ? "" : cur.v,
-        onchange: e => { const v = e.target.value; if (v === "") delete f[k]; else f[k] = { ...(f[k] || { u: unit.value }), v: Number(v), u: unit.value, conf: false }; touch(); render(); } });
+        onchange: e => { const v = e.target.value; if (v === "") delete f[k]; else teamSet(f, k, Number(v), unit.value); touch(); render(); } });
       const unit = h("select", { class: "ed", "aria-label": _t("Unit for {0}", [st.name]), onchange: e => { if (f[k]) { f[k].u = e.target.value; f[k].conf = false; touch(); render(); } } },
         FLOW_UNITS.map(([u, n]) => h("option", { value: u, selected: (cur.u || (k === "waitBefore" ? "h" : "min")) === u }, _t(n))));
       return h("div", { class: "ff" }, lab(k), h("div", { class: "ffin" }, num, unit));
@@ -1439,11 +1446,11 @@ function flowEdit(A) {
     const numField = (k, max) => {
       const cur = f[k] || {};
       const num = h("input", { class: "ed", type: "number", min: "0", max: max || null, step: "any", inputmode: "decimal", "aria-label": _t("{0} for {1}", [_t(FLOW_HELP[k][0]), st.name]), value: cur.v == null ? "" : cur.v,
-        onchange: e => { const v = e.target.value; if (v === "") delete f[k]; else f[k] = { ...(f[k] || {}), v: Number(v), conf: false }; touch(); render(); } });
+        onchange: e => { const v = e.target.value; if (v === "") delete f[k]; else teamSet(f, k, Number(v)); touch(); render(); } });
       return h("div", { class: "ff" }, lab(k), h("div", { class: "ffin" }, num));
     };
     const cur = f.valueAdd || {};
-    const vaSel = h("select", { class: "ed", "aria-label": _t("Value of {0}", [st.name]), onchange: e => { if (!e.target.value) delete f.valueAdd; else f.valueAdd = { ...(f.valueAdd || {}), v: e.target.value, conf: false }; touch(); render(); } },
+    const vaSel = h("select", { class: "ed", "aria-label": _t("Value of {0}", [st.name]), onchange: e => { if (!e.target.value) delete f.valueAdd; else teamSet(f, "valueAdd", e.target.value); touch(); render(); } },
       h("option", { value: "" }, _t("Not classified")), Object.entries(VA_LABEL).map(([v, l]) => h("option", { value: v, selected: cur.v === v }, _t(l))));
     const keys = ["processTime", "waitBefore", "queue", "reworkPct", "valueAdd"].filter(k => f[k]);
     const allConf = keys.length > 0 && keys.every(k => f[k].conf);
